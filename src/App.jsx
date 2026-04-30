@@ -1,121 +1,88 @@
 import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
+import SearchBar from './components/SearchBar'
+import WeatherCard from './components/WeatherCard'
 import './App.css'
 
+const API_KEY = import.meta.env.VITE_WEATHER_API_KEY
+
 function App() {
-  const [count, setCount] = useState(0)
+  const [weather, setWeather] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  const fetchWeather = async (city) => {
+    setLoading(true)
+    setError('')
+    setWeather(null)
+
+    try {
+      const res = await fetch(
+        `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${API_KEY}&units=metric`
+      )
+      const data = await res.json()
+
+      if (data.cod !== 200) {
+        setError(`❌ City "${city}" not found. Please try again.`)
+      } else {
+        setWeather(data)
+      }
+    } catch (err) {
+      setError('⚠️ Something went wrong. Check your internet connection.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Change background gradient based on weather condition
+  const getBgClass = () => {
+    if (!weather) return 'bg-default'
+    const main = weather.weather[0].main.toLowerCase()
+    if (main.includes('clear')) return 'bg-clear'
+    if (main.includes('cloud')) return 'bg-clouds'
+    if (main.includes('rain') || main.includes('drizzle')) return 'bg-rain'
+    if (main.includes('snow')) return 'bg-snow'
+    if (main.includes('thunder')) return 'bg-thunder'
+    if (main.includes('mist') || main.includes('fog') || main.includes('haze')) return 'bg-mist'
+    return 'bg-default'
+  }
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <div className={`app ${getBgClass()}`}>
+      <div className="container">
 
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
+        {/* Header */}
+        <div className="header">
+          <h1 className="app-title">🌤️ Weather App</h1>
+          <p className="app-subtitle">Search any city to get live weather</p>
         </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+        {/* Search Bar */}
+        <SearchBar onSearch={fetchWeather} loading={loading} />
+
+        {/* Loading Spinner */}
+        {loading && (
+          <div className="loading">
+            <div className="spinner"></div>
+            <p>Fetching weather data...</p>
+          </div>
+        )}
+
+        {/* Error Message */}
+        {error && <div className="error-box">{error}</div>}
+
+        {/* Weather Card */}
+        {weather && !loading && <WeatherCard data={weather} />}
+
+        {/* Default Placeholder */}
+        {!weather && !loading && !error && (
+          <div className="placeholder">
+            <div className="placeholder-icon">🌍</div>
+            <p>Search for a city to see the weather</p>
+          </div>
+        )}
+
+      </div>
+    </div>
   )
 }
 
